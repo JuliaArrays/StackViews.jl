@@ -18,7 +18,11 @@ end
     @test size(sv) == (3, 4, 2)
     @test collect(sv) == cat(A, B; dims=3)
 
-    sv = @inferred StackView((A, B))
+    sv = if VERSION >= v"1.2.0"
+        @inferred StackView((A, B))
+    else
+        StackView((A, B))
+    end
     @test size(sv) == (3, 4, 2)
     @test collect(sv) == cat(A, B; dims=3)
 

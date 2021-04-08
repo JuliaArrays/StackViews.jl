@@ -1,7 +1,14 @@
 name: CI
 on:
-  - push
-  - pull_request
+  create:
+    tags:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '20 00 1 * *'
+
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -15,6 +22,8 @@ jobs:
           - 'nightly'
         os:
           - ubuntu-latest
+          - macos-latest
+          - windows-latest
         arch:
           - x64
     steps:

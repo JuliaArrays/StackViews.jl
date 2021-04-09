@@ -3,11 +3,12 @@
 [![Build Status](https://github.com/JuliaArrays/StackViews.jl/workflows/CI/badge.svg)](https://github.com/JuliaArrays/StackViews.jl/actions)
 [![Coverage](https://codecov.io/gh/JuliaArrays/StackViews.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaArrays/StackViews.jl)
 
-There are three ways to understand `StackView`:
+`StackViews` provides only one array type: `StackView`. There are multiple ways to understand `StackView`:
 
 - inverse of `eachslice`
 - `cat` variant
 - view object
+- lazy version of `repeat` special case
 
 ## `StackView` as the inverse of `eachslice`
 
@@ -128,11 +129,26 @@ As == Ac # true
 @btime arrsum_cart($Ac); # 128.888 ms (0 allocations: 0 bytes)
 ```
 
-## More examples
+## `StackView` as a lazy version of `repeat` special case
 
-When arrays are of different types and sizes, `StackViews` just kills `cat`s:
+`StackView` allows you to stack the same array object multiple times, which makes a special
+version of `repeat` when there's only one none-1 repeat count:
 
 ```julia
+A = rand(1000, 1000);
+n = 100;
+StackView([A for _ in 1:n]) == repeat(A, ntuple(_->1, ndims(A))..., n) # true
+@btime StackView([$A for _ in 1:$n]); # 403.156 ns (2 allocations: 1.75 KiB)
+@btime repeat($A, ntuple(_->1, ndims($A))..., $n) # 590.043 ms (4 allocations: 762.94 MiB)
+```
+
+## More examples
+
+When arrays are of different types and sizes, `StackView` just kills `cat`s:
+
+```julia
+julia> using StackViews, PaddedViews
+
 julia> A = collect(reshape(1:8, 2, 4));
 
 julia> B = collect(reshape(9:16, 4, 2));

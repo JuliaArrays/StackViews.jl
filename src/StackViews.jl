@@ -8,11 +8,12 @@ const SlicesType = Union{Tuple, AbstractArray{<:AbstractArray}}
 
 """
     StackView(slices...; [dims])
-    StackView(slices, [dim])
+    StackView(slices, [dims])
+    StackView{T}(args...; kwargs...)
 
-Stack/concatenate a list of arrays `slices` along dimension `dim` without copying the data.
+Stack/concatenate a list of arrays `slices` along dimension `dims` without copying the data.
 
-If not specified, `dim` is defined as `ndims(first(slices))+1`, i.e., a new dimension in the tail.
+If not specified, `dims` is defined as `ndims(first(slices))+1`, i.e., a new dimension in the tail.
 This works better for normal Julia arrays when their memory layout is column-major.
 
 # Example
@@ -80,19 +81,31 @@ struct StackView{T, N, D, A} <: AbstractArray{T, N}
     StackView{T, N, 0}(::A) where {T, N, A} = throw(ArgumentError("`dims=Val(0)` is not supported, do you mean `dims=Val(1)`?"))
 end
 StackView(slices::AbstractArray...; dims=Val(_default_dims(slices))) = StackView(slices, dims)
+StackView{T}(slices::AbstractArray...; dims=Val(_default_dims(slices))) where T = StackView{T}(slices, dims)
 StackView(slices, dims::Int) = StackView(slices, Val(dims)) # type-unstable
 
 function StackView(slices::SlicesType, dims::Val = Val(_default_dims(slices)))
+   return StackView{_default_eltype(slices)}(slices, dims)
+end
+function StackView{T}(slices::SlicesType, dims::Val = Val(_default_dims(slices))) where T
     N = _max(dims, Val(_default_dims(slices)))
-    slices = map(OffsetArrays.no_offset_view, slices) # unify all the axes
-    StackView{_default_eltype(slices), _value(N), _value(dims)}(slices)
+    # unify all the axes to 1-based ranges
+    slices = map(OffsetArrays.no_offset_view, slices)
+    return StackView{T, _value(N), _value(dims)}(slices)
 end
 
 @inline _default_dims(slices) = ndims(first(slices)) + 1
 @inline function _default_eltype(slices)
     T = mapreduce(eltype, promote_type, slices)
-    isconcretetype(T) || throw(ArgumentError("Input arrays should be homogenous."))
+    _isconcretetype(T) || throw(ArgumentError("Input arrays should be homogenous."))
     return T
+end
+function _isconcretetype(T)
+    # We relax the restriction and allow `Union`
+    # This is particularily useful for arrays with `missing` and `nothing`
+    isconcretetype(T) && return true
+    isa(T, Union) && return isconcretetype(T.a) && _isconcretetype(T.b)
+    return false
 end
 
 function Base.size(A::StackView{T,N,D}) where {T,N,D}
@@ -102,9 +115,14 @@ function Base.size(A::StackView{T,N,D}) where {T,N,D}
 end
 
 function Base.axes(A::StackView{T,N,D}) where {T,N,D}
-    frame_size = axes(first(A.slices))
-    prev, post = Base.IteratorsMD.split(frame_size, Val(D-1))
-    return (_append_tuple(prev, Val(D-1), Base.OneTo(1))..., Base.OneTo(length(A.slices)), post...)
+    frame_axes = axes(first(A.slices))
+    prev, post = Base.IteratorsMD.split(frame_axes, Val(D-1))
+
+    # use homogenous range to make _append_tuple happy
+    fill_range = convert(typeof(first(frame_axes)), Base.OneTo(1))
+    return (_append_tuple(prev, Val(D-1), fill_range)...,
+            Base.OneTo(length(A.slices)),
+            post...)
 end
 
 @inline function Base.getindex(A::StackView{T,N,D}, i::Vararg{Int,N}) where {T,N,D}

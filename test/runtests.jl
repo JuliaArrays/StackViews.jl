@@ -62,11 +62,41 @@ end
     @test_throws ArgumentError StackView([A, B], 0)
     @test_throws ArgumentError StackView([A, B], Val(0))
 
+    # repeat the array multiple times is allowed
+    A = [1, 2, 3, 4]
+    @test StackView([A for i in 1:3]) == repeat(A, 1, 3)
+
+    @testset "heterogeneous arrays" begin
+        A = Int[1, 2, 3, 4]
+        B = Union{Missing, Float64}[missing, 6, 7, 8]
+        sv = @inferred StackView([A, B])
+        @test eltype(sv) == Union{Missing, Float64}
+        T = Union{Missing, Float32}
+        sv = @inferred StackView{T}([A, B])
+        @test eltype(sv) == T
+
+        A = Int[1, 2, 3, 4]
+        B = [[1, ], [2, ], [3, ], [4, ]]
+        @test_throws ArgumentError StackView(A, B)
+        # Perhaps suprisingly, with explicit type T it bypasses the type check
+        # It's an undefined behavior, just put it here for the record
+        sv = @test_nowarn StackView{Int}(A, B)
+        @test_throws MethodError collect(sv)
+    end
+
     @testset "axes" begin
         # axes are unified to 1-based
         A = OffsetArray(collect(reshape(1:8, 2, 4)), -1, 1)
         B = OffsetArray(collect(reshape(9:16, 2, 4)), 1, -1)
-        @test axes(StackView([A, B], 1)) == (Base.OneTo(2), Base.OneTo(2), Base.OneTo(4))
+        sv = StackView([A, B], 1)
+        @inferred axes(sv)
+        @test axes(sv) === (Base.OneTo(2), Base.OneTo(2), Base.OneTo(4))
+
+        A = collect(reshape(1:8, 2, 4))
+        B = collect(reshape(9:16, 2, 4))
+        sv = StackView([A, B], 1)
+        @inferred axes(sv)
+        @test axes(sv) === (Base.OneTo(2), Base.OneTo(2), Base.OneTo(4))
     end
 
     @testset "setindex!" begin

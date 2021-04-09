@@ -110,7 +110,7 @@ fill!(sv, -1) # A and B are modified
 A == B == fill(-1, 4) # true
 ```
 
-It has little `getindex` overhead compared to its memory allocation:
+If indexed in contiguous memeory order, it has almost zero overhead for `getindex` and `setindex!`:
 
 ```julia
 function arrsum_cart(A::AbstractArray)
@@ -121,12 +121,12 @@ function arrsum_cart(A::AbstractArray)
     return rst
 end
 
-As = StackView(frames, Val(1));
-Ac = cat(map(x->reshape(x, 1, axes(x)...), frames)...; dims=1);
+As = StackView(frames);
+Ac = cat(map(x->reshape(x, axes(x)..., 1), frames)...; dims=3);
 As == Ac # true
 
-@btime arrsum_cart($As); # 257.410 ms (0 allocations: 0 bytes)
-@btime arrsum_cart($Ac); # 128.888 ms (0 allocations: 0 bytes)
+@btime arrsum_cart($As); # 122.703 ms (0 allocations: 0 bytes)
+@btime arrsum_cart($Ac); # 123.813 ms (0 allocations: 0 bytes)
 ```
 
 ## `StackView` as a lazy version of `repeat` special case

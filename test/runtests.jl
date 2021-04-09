@@ -108,5 +108,11 @@ end
             fill!(sv, -1)
             @test A == B == fill(-1, 4)
         end
+
+        A = [0, 1, 2, 3]
+        B = [4, 5, 6, 7]
+        sv = StackView(A, B)
+        sv[4, 2] = -1
+        @test sv[4, 2] == B[4] == -1
     end
 end

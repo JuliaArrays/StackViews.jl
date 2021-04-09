@@ -125,16 +125,16 @@ function Base.axes(A::StackView{T,N,D}) where {T,N,D}
             post...)
 end
 
-@inline function Base.getindex(A::StackView{T,N,D}, i::Vararg{Int,N}) where {T,N,D}
-    @boundscheck checkbounds(A, i...)
-    prev, post = Base.IteratorsMD.split(i, Val(D-1))
+@inline function Base.getindex(A::StackView{T,N,D}, inds::Vararg{Int,N}) where {T,N,D}
+    @boundscheck checkbounds(A, inds...)
+    prev, post = Base.IteratorsMD.split(inds, Val(D-1))
     idx, post = first(post), Base.tail(post)
     return @inbounds A.slices[idx][prev..., post...]
 end
 
-@inline function Base.setindex!(A::StackView{T,N,D}, x, i::Vararg{Int, N}) where {T,N,D}
-    @boundscheck checkbounds(A, i...)
-    prev, post = Base.IteratorsMD.split(i, Val(D-1))
+@inline function Base.setindex!(A::StackView{T,N,D}, x, inds::Vararg{Int, N}) where {T,N,D}
+    @boundscheck checkbounds(A, inds...)
+    prev, post = Base.IteratorsMD.split(inds, Val(D-1))
     idx, post = first(post), Base.tail(post)
     @inbounds A.slices[idx][prev..., post...] = x
 end

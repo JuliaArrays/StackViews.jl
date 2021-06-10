@@ -196,3 +196,7 @@ mosaicview(StackView(sym_paddedviews(zero(RGB), toucan, moon)); nrow=1)
 ```
 
 ![](https://user-images.githubusercontent.com/1525481/97542758-4b5ade80-1995-11eb-87cc-5fd2b0ba23fc.png)
+
+## Other similar packages
+
+- There's a lot of overlap between this and [LazyStack.jl](https://github.com/mcabbott/LazyStack.jl); I didn't notice its existance when I wrote this.

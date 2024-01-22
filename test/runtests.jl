@@ -4,7 +4,7 @@ using Aqua, Documenter
 
 @testset "Project meta quality checks" begin
     # Not checking compat section for test-only dependencies
-    Aqua.test_all(StackViews; project_extras=true, deps_compat=true, stale_deps=true, project_toml_formatting=true)
+    Aqua.test_all(StackViews; project_extras=true, deps_compat=true, stale_deps=true)
     if VERSION >= v"1.2"
         doctest(StackViews, manual = false)
     end

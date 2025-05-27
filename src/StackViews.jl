@@ -119,7 +119,7 @@ function Base.axes(A::StackView{T,N,D}) where {T,N,D}
     prev, post = Base.IteratorsMD.split(frame_axes, Val(D-1))
 
     # use homogenous range to make _append_tuple happy
-    fill_range = convert(typeof(first(frame_axes)), Base.OneTo(1))
+    fill_range = _convert(eltype(prev), Base.OneTo(1))
     return (_append_tuple(prev, Val(D-1), fill_range)...,
             Base.OneTo(length(A.slices)),
             post...)
@@ -140,6 +140,8 @@ end
 end
 
 # utils
+_convert(::Type{Base.Bottom}, idx)=idx
+_convert(T::Type, idx)=convert(T, idx)
 
 # For type stability
 @inline _max(::Val{x}, ::Val{y}) where {x, y} = Val(max(x, y))

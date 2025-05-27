@@ -1,7 +1,7 @@
 name = "StackViews"
 uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
 authors = ["Johnny Chen <johnnychen94@hotmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
